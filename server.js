@@ -1,14 +1,16 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import noteRoutes from './routes/noteRoutes.js';
+const express = require('express');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const cors = require("cors");
+const noteRoutes = require('./routes/noteRoutes.js');
 
 // Load environment variables from .env file
 dotenv.config();
 
 const app = express();
 
-// Middleware to parse JSON
+// Middleware to parse JSON 
+app.use(cors());
 app.use(express.json());
 
 // Routes
