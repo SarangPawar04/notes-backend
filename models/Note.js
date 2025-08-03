@@ -1,6 +1,6 @@
 // models/Note.js
 
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const noteSchema = new mongoose.Schema(
   {
@@ -12,10 +12,20 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    fileUrl: {
+      type: String,
+      required: true,
+    },
+    publicId: {
+      type: String,
+      required: true,
+    },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt automatically
+    timestamps: true, // adds createdAt and updatedAt
   }
 );
 
-module.exports = mongoose.model('Note', noteSchema);
+const Note = mongoose.model('Note', noteSchema);
+
+export default Note;

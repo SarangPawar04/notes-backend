@@ -1,79 +1,67 @@
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const Note = require('../models/Note'); 
+// routes/noteRoutes.js
+
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
 
-// @desc    Get all notes
-// @route   GET /api/notes
-// @access  Public
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    const notes = await Note.find({});
-    res.json(notes);
-  })
-);
+// Middleware to handle file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Save files to uploads/ folder
+  },
+  filename: (req, file, cb) => {
+    // Unique filename: timestamp + original name
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
+  }
+});
 
-// ✅ @desc    Create a new note
-// ✅ @route   POST /api/notes
-// ✅ @access  Public
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
-    const { title, content } = req.body;
+const upload = multer({ storage });
 
-    if (!title || !content) {
-      res.status(400);
-      throw new Error('Please fill all fields');
-    }
+const notes = []; // This will reset every time server restarts
 
-    const note = new Note({ title, content });
-    const createdNote = await note.save();
-    res.status(201).json(createdNote);
-  })
-);
+// Create a note
+router.post('/', upload.single('file'), (req, res) => {
+  const { title, content } = req.body;
 
-router.get(
-  '/:id',
-  asyncHandler(async (req, res) => {
-    const note = await Note.findById(req.params.id);
-    if (!note) {
-      res.status(404);
-      throw new Error('Note not found');
-    }
-    res.json(note);
-  })
-);
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-router.put(
-  '/:id',
-  asyncHandler(async (req, res) => {
-    const { title, content } = req.body;
-    const note = await Note.findById(req.params.id);
-    if (!note) {
-      res.status(404);
-      throw new Error('Note not found');
-    }
-    note.title = title || note.title;
-    note.content = content || note.content;
-    const updatedNote = await note.save();
-    res.json(updatedNote);
-  })
-); 
+  const note = {
+    id: Date.now(),
+    title,
+    content,
+    filePath: `/uploads/${req.file.filename}`
+  };
 
-router.delete(
-  '/:id',
-  asyncHandler(async (req, res) => {
-    const note = await Note.findById(req.params.id);
-    if (!note) {
-      res.status(404);
-      throw new Error('Note not found');
-    }
-    await Note.findByIdAndDelete(req.params.id);
+  notes.push(note);
 
-    res.json({ message: 'Note removed' });
-  })
-);
+  res.json({
+    message: 'File uploaded successfully',
+    note
+  });
+});
 
-module.exports = router;
+// Get all notes
+router.get('/', (req, res) => {
+  res.json(notes);
+});
+
+// Get a single note by ID
+router.get('/:id', (req, res) => {
+  const note = notes.find(n => n.id == req.params.id);
+  if (!note) return res.status(404).json({ error: 'Note not found' });
+  res.json(note);
+});
+
+// Delete a note by ID
+router.delete('/:id', (req, res) => {
+  const index = notes.findIndex(n => n.id == req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Note not found' });
+
+  notes.splice(index, 1);
+  res.json({ message: 'Note deleted' });
+});
+
+export default router;
